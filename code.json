@@ -1,0 +1,48 @@
+[
+  {
+    "name": "Invasive Loach eDNA",
+    "organization": "U.S. Fish & Wildlife Service",
+    "description": "Code to support a manuscript on the use of eDNA to guide eradication planning for invasive loaches in California's Central Valley",
+    "version": "0.1",
+    "status": "development",
+
+    "permissions": {
+      "usageType": "openSource",
+      "licenses": [
+        {
+          "name": "GPL 3.0",
+          "URL": "https://github.com/USFWS/LFWO-Loach-eDNA/blob/main/LICENSE.md"
+        }
+      ]
+    },
+
+    "homepageURL": "https://github.com/USFWS/LFWO-Loach-eDNA",
+    "downloadURL": "https://github.com/USFWS/LFWO-Loach-eDNA/archive/refs/heads/main.zip",
+    "disclaimerURL": "https://github.com/USFWS/LFWO-Loach-eDNA/blob/main/DISCLAIMER.md",
+    "repositoryURL": "https://github.com/USFWS/LFWO-Loach-eDNA.git",
+    "vcs": "git",
+
+    "laborHours": 2,
+
+    "tags": [
+      "r8",
+      "usfws"
+    ],
+
+    "languages": [
+	  "r",
+      "json",
+      "md",
+      "html"
+    ],
+
+    "contact": {
+      "name": "Vanessa Tobias",
+      "email": "vanessa_tobias@fws.gov"
+    },
+
+    "date": {
+      "metadataLastUpdated": "2024-04-18"
+    }
+  }
+]
