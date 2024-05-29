@@ -29,15 +29,30 @@ library(rdryad)
 
 #### 3. Download Data ####
 
+# Datasets are available on Dryad:
+# https://doi.org/10.5061/dryad.n8pk0p342
+# use this to get Dryad's ID numbers:
+dryad_dataset("10.5061/dryad.n8pk0p342")
+# use this to get version numbers:
+dryad_dataset_versions("10.5061/dryad.n8pk0p342")
+
 ##### 3.1 eDNA ####
+
+# The code below will download data directly from Dryad once the data is made
+#      public. Peer reviewers can use the link provided by Dryad to download 
+#      the data. Filenames are provided below.
+
 # Site-level eDNA information 
 edna <- dryad_files_download('xxx')
+# eDNA_detections_site_data.csv
 
 ## 3.2 Traps ####
 traps <- dryad_files_download('xxx')
+# catch_loach_data.csv
 
 ## 3.3 Fish ####
 fish <- dryad_files_download('xxx')
+# loach_length_data.csv
 
 
 #### 3. Prepare Data ####

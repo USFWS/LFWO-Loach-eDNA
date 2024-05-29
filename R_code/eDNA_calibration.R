@@ -8,6 +8,20 @@
 # March 7, 2023
 
 # Libraries
+# 
+# artemis requires cmdstanr, which you might need to install
+#     artemis installation instructions: https://github.com/fishsciences/artemis
+#     cmdstanr instructions: https://mc-stan.org/cmdstanr/articles/cmdstanr.html
+#         - requires cmdstan and rtools
+library(cmdstanr)
+# verify path and version
+cmdstan_path()
+cmdstan_version() # script tested with version "2.34.1"
+
+# If artemis needs to be installed:
+# devtools::install_github("fishsciences/artemis") # install artemis
+# artemis::compile_models() # don't skip this after successfully installing artemis
+
 library(artemis)
 library(openxlsx)
 library(rdryad)
@@ -17,7 +31,10 @@ library(stringr)
 
 # Read data
 # dat = read.xlsx("Analysis/Livecar/USFWS_Loach removal_eDNA calibration.xlsx", sheet=1) #update path to data file location
+# library(readxl)
+# dat = read_xlsx("C:/Users/vtobias/Documents/Loach_Study_2023/Data_Raw/USFWS_Loach removal_eDNA calibration.xlsx")
 dat = dryad_files_download('xxx')
+# CalibrationExperiment_qPCR_RAW.csv
 
 # set distances plotting order
 table(dat$dist_lc_m)
@@ -60,8 +77,10 @@ m_sc
 plot(m_sc)
 
 # export model
-saveRDS(m_sc, "Analysis/Livecar/small_channel.rds") # export model results
-m_sc = readRDS("Analysis/Livecar/small_channel.rds") # import model results (if already exported)
+saveRDS(m_sc, "./Model_output/small_channel.rds") # export model results
+# small_channel.rds provided in the Model_output folder on github is from the
+#   run used in the manuscript. Each run will produce slightly different results.
+m_sc = readRDS("./Model_output/small_channel.rds") # import model results (if already exported)
 
 # Modeling large channel data
 m_lc = eDNA_lmer(Cq ~ dist_lc_m + Target + (1|FilterID),
@@ -100,25 +119,45 @@ sc_model_plot =
  
 
 # Export small channel model output
-ggsave("Analysis/Manuscript Plots and Figs/sc_model_plot2.jpeg",
+ggsave("./Figures/sc_model_plot2.jpeg",
        plot=sc_model_plot, 
        width=7, 
-       height=1.5*aspect_ratio) # update directory as needed
+       height= 5.25) #1.5*aspect_ratio) # update directory as needed
 
 
 # p-detect in small channel
-# I ran through each combo of factors and manually created table in excel with the output
-est_p_detect(variable_levels = c(dist_lc_m50 = 1,
-                                 dist_lc_m100= 0,
-                                 dist_lc_m250= 0,
-                                 dist_lc_m500= 0,
-                                 TargetBHOO = 0),
+# create a dataset with labels and predictor variables:
+small_canal_pod <- data.frame(Location = rep("Small Channel", 10),
+                              Target = c(rep("Ballyhoo", 5), rep("Anchovy", 5)),
+                              Distance = c(500, 250, 100, 50, 10, 10, 500, 250, 100, 50),
+                              dist_lc_m50  = c(0, 0, 0, 1, 0, 0, 0, 0, 0, 1),
+                              dist_lc_m100 = c(0, 0, 1, 0, 0, 0, 0, 0, 1, 0),
+                              dist_lc_m250 = c(0, 1, 0, 0, 0, 0, 0, 1, 0, 0),
+                              dist_lc_m500 = c(1, 0, 0, 0, 0, 0, 1, 0, 0, 0),
+                              TargetBHOO   = c(1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+                              n_techrep = rep(3, 10),
+                              PoD_mean = NA, # empty column for storing predictions
+                              PoD_low = NA,  # empty column for storing predictions
+                              PoD_high = NA  # empty column for storing predictions
+)
+
+# Use the dataset above to predict the probability of detection
+#  Cycle through the rows to use the data, then write the results to the
+#  appropriate columns.
+for(i in 1:nrow(small_canal_pod)){
+  tmp <- est_p_detect(variable_levels = c(dist_lc_m50 = small_canal_pod$dist_lc_m50[i],
+                                 dist_lc_m100= small_canal_pod$dist_lc_m100[i],
+                                 dist_lc_m250= small_canal_pod$dist_lc_m250[i],
+                                 dist_lc_m500= small_canal_pod$dist_lc_m500[i],
+                                 TargetBHOO = small_canal_pod$TargetBHOO[i]),
              std_curve_alpha = 18.475, # for loach, from PL_MM assay standard curve
              std_curve_beta = -1.545,  # for loach, from PL_MM assay standard curve
-             model_fit = m_sc, n_rep = 3) # 3 reps = 3 filters
+             model_fit = m_sc, 
+             n_rep = 3) # 3 reps = 3 filters
+  small_canal_pod$PoD_mean[i] <- mean(tmp)
+  small_canal_pod[i, c("PoD_low", "PoD_high")] <- quantile(tmp, probs = c(0.025, 0.975))
+}
 
-# When all combinations are tested with p_detect, read in the manually created PoD excel table
-small_canal_pod = read.xlsx("Analysis/Livecar/small_channel_pod.xlsx") # update directory
 
 # plot PoD
 sc_pod_plot= 
@@ -139,12 +178,15 @@ sc_pod_plot=
         plot.subtitle = element_text(hjust=0.5), legend.position = "bottom")
 
 # export PoD plot
-ggsave("Analysis/Manuscript Plots and Figs/sc_pod_plot.jpeg",plot=sc_pod_plot, width=5, 
-       height=1.25*aspect_ratio)  # update directory
+ggsave("./Figures/sc_pod_plot.jpeg",
+       plot=sc_pod_plot, 
+       width=5, 
+       height= 7) #1.25*aspect_ratio)  # update directory
 
 # PoD plot with error bars
 facet_names = as_labeller(
-  c(`Anchovy` = "Appx. 16g", `Ballyhoo` = "Appx. 100g"))
+  c(`Anchovy` = "Appx. 16g", 
+    `Ballyhoo` = "Appx. 100g"))
 
 sc_pod_plot_eb= 
   ggplot(subset(small_canal_pod, n_techrep=="3"), 
@@ -163,13 +205,16 @@ sc_pod_plot_eb=
   theme_bw()+
   theme(text = element_text (size=12, family= "serif"))+
   theme(plot.title = element_text(hjust=0.5), 
-        plot.subtitle = element_text(hjust=0.5), legend.position = "bottom")+
-  facet_wrap(~Target, ncol= 2, labeller=facet_names)
+        plot.subtitle = element_text(hjust=0.5), 
+        legend.position = "bottom") +
+  facet_wrap(~Target, 
+             ncol= 2, 
+             labeller=facet_names)
 
 
-ggsave("Analysis/Manuscript Plots and Figs/sc_pod_plot_errorbars.jpeg",
+ggsave("./Figures/sc_pod_plot_errorbars.jpeg",
        plot=sc_pod_plot_eb, 
        width=10, 
-       height=2*aspect_ratio) # update directory
+       height= 6) #2*aspect_ratio) # update directory
 
 ### END ###
