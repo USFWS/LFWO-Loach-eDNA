@@ -9,7 +9,7 @@
 #   Vanessa Tobias (USFWS; vanessa_tobias@fws.gov)
 
 # Last updated: 
-#   2024-05-17
+#   2024-07-23
 
 # 1. Setup ####
 # Load Packages
@@ -123,7 +123,6 @@ cpueM_tnb <- glmmTMB(loachTotal ~ round.f, #trap round as a factor
                      data = datMain,
                      ziformula = ~ 1,
                      family = truncated_nbinom2)
-# AIC(cpueE_p, cpueE_nb, cpueE_tp, cpueE_tnb, cpueE_p_cr, cpueE_tnb_temp, cpueE_tnb_tr)
 
 AIC(cpueM_p, cpueM_nb, cpueM_tp, cpueM_tnb)
 # cpueM_tnb
@@ -141,7 +140,6 @@ newdataMain = data.frame(round.f = factor(c("Round1",
                          timeFishedMinTotal = c(1440, 1440, 1440, 1440, 1440))
 
 statMain <- function(df, inds) {
-  #model <- formula(repro ~ fertilizer + level | fertilizer * level)
   predict(
     glmmTMB(loachTotal ~ round.f, #trap round as a factor
             offset = log(timeFishedMinTotal),
@@ -313,28 +311,6 @@ predict(
   newdata = newdataMain,
   type = "zprob"
 )
-# [1] 0.1168825 0.1168825 0.1168825 0.1168825 0.1168825
-
-# Main study model with just one trap
-# zprob <- data.frame(trapcount = 1:10,
-#                     zprob = NA)
-# for(i in 1:10){
-#   cpueM_tnb_one <- glmmTMB(loach_captured ~ round.f, #trap round as a factor
-#                      offset = log(total_time_fished),
-#                      data = traps[which(traps$study == "Main" &
-#                                           traps$trap_num %in% 1:i),],
-#                      ziformula = ~ 1,
-#                      family = truncated_nbinom2)
-# 
-# zprob[i, 2] <- predict(cpueM_tnb_one,
-#         newdata = data.frame(round.f = newdataMain$round.f,
-#                              total_time_fished = newdataMain$timeFishedMinTotal),
-#         type = "zprob")[1]
-# }
-# 
-# plot(zprob,
-#      pch = 16, type = "b",
-#      xlab = "Traps Included")
 
 # bootstrap estimates of zprob using total counts of specified numbers of traps
 # create dataset to contain results

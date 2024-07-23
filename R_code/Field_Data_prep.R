@@ -15,7 +15,7 @@
 #    Vanessa Tobias <vanessa_tobias@fws.gov>
 
 # Date updated:
-#    2024-05-17
+#    2024-07-23
 
 
 #### 2. Setup ####
@@ -45,7 +45,6 @@ last <- function(x) x[length(x)]
 z = dryad_dataset_versions("10.5061/dryad.n8pk0p342")
 idpath <- z[[1]]$`_embedded`$`stash:versions`$`_links.self.href`
 id <- as.numeric(last(strsplit(idpath, "/")[[1]]))
-# gives you information about the files, including their individual IDs
 dryad_versions_files(id)
 # --> a list of individual CSV files 
 # File        Name                          ID Number
@@ -67,21 +66,15 @@ dryad_versions_files(id)
 #      the data. Filenames are provided below.
 
 # Site-level eDNA information 
-# edna <- dryad_files_download('3345400')
 # eDNA_detections_site_data.csv
-# edna <- read.csv("./Dryad_data/eDNA_detections_site_data.csv")
 edna <- read.csv("https://datadryad.org/api/v2/files/3345400/download")
 
 ## 3.2 Traps ####
-# traps <- dryad_files_download('xxx')
 # # catch_loach_data.csv
-# traps <- read.csv("./Dryad_data/catch_loach_data.csv")
 traps <- read.csv("https://datadryad.org/api/v2/files/3345399/download")
 
 ## 3.3 Fish ####
-# fish <- dryad_files_download('xxx')
 # # loach_length_data.csv
-# fish <- read.csv("./Dryad_data/loach_length_data.csv")
 fish <- read.csv("https://datadryad.org/api/v2/files/3345405/download")
 
 

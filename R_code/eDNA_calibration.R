@@ -5,7 +5,7 @@
 # Katie Karpenko
 
 # Last updated: 
-# March 7, 2023
+#   2024-07-23
 
 # Libraries ####
 # 
@@ -32,10 +32,6 @@ library(ggtext)
 
 
 # Read data ####
-# dat = read.xlsx("Analysis/Livecar/USFWS_Loach removal_eDNA calibration.xlsx", sheet=1) #update path to data file location
-# library(readxl)
-# dat = read_xlsx("C:/Users/vtobias/Documents/Loach_Study_2023/Data_Raw/USFWS_Loach removal_eDNA calibration.xlsx")
-# dat = dryad_files_download('xxx')
 dat = read.csv("https://datadryad.org/api/v2/files/3345398/download")
 # CalibrationExperiment_qPCR_RAW.csv
 
@@ -107,7 +103,6 @@ sm2$row2 = factor(sm2$row2, levels=c("500m", "250m","100m","50m",
                                      "Target(Hemiramphus brasiliensis)", #"Target(Ballyhoo)",
                                      "sigma ln(eDNA)",
                                      "Intercept"))
-# sm2$row2 = as.factor(sm2$row2)
 
 # Figure 4 ####
 sc_model_plot =
@@ -285,8 +280,6 @@ lc_detect_plot=
                                                                      family="sans", 
                                                                      angle = 0, 
                                                                      face = "italic"))) +
-  #geom_smooth(se = FALSE) +
-  #scale_y_log10(oob = scales::squish_infinite)+
   labs(x="Distance (m)", 
        y="Relative Concentration of eDNA (ng/µL)")+
   scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 5))+
