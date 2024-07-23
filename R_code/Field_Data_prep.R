@@ -20,11 +20,13 @@
 
 #### 2. Setup ####
 library(rdryad)
+library(tidyverse)
 # Note that the author of this script is aware that the developer for {rdryad} 
 #     plans for it to be superseded by {deposits} in the future, but at the 
 #     time this script was developed the transition had not happened yet.
 #     Potential future users of this script may need to update the code once
 #     this transition has happened.
+# library(httr) # for GET
 
 
 #### 3. Download Data ####
@@ -36,6 +38,28 @@ dryad_dataset("10.5061/dryad.n8pk0p342")
 # use this to get version numbers:
 dryad_dataset_versions("10.5061/dryad.n8pk0p342")
 
+
+
+# https://github.com/ropensci/rdryad/issues/32
+last <- function(x) x[length(x)]
+z = dryad_dataset_versions("10.5061/dryad.n8pk0p342")
+idpath <- z[[1]]$`_embedded`$`stash:versions`$`_links.self.href`
+id <- as.numeric(last(strsplit(idpath, "/")[[1]]))
+# gives you information about the files, including their individual IDs
+dryad_versions_files(id)
+# --> a list of individual CSV files 
+# File        Name                          ID Number
+# 1      CalibrationExperiment_qPCR_RAW.csv  3345398
+# 2                    catch_loach_data.csv  3345399
+# 3           eDNA_detections_site_data.csv  3345400
+# 4                 PilotStudy_qPCR_RAW.csv  3345401
+# 5 Resampled_eDNA_detections_site_data.csv  3345402
+# 6                  MainStudy_qPCR_RAW.csv  3345403
+# 7           All_Variable_descriptions.csv  3345404
+# 8                   loach_length_data.csv  3345405
+# 9                               README.md  3345406
+
+
 ##### 3.1 eDNA ####
 
 # The code below will download data directly from Dryad once the data is made
@@ -43,16 +67,22 @@ dryad_dataset_versions("10.5061/dryad.n8pk0p342")
 #      the data. Filenames are provided below.
 
 # Site-level eDNA information 
-edna <- dryad_files_download('xxx')
+# edna <- dryad_files_download('3345400')
 # eDNA_detections_site_data.csv
+# edna <- read.csv("./Dryad_data/eDNA_detections_site_data.csv")
+edna <- read.csv("https://datadryad.org/api/v2/files/3345400/download")
 
 ## 3.2 Traps ####
-traps <- dryad_files_download('xxx')
-# catch_loach_data.csv
+# traps <- dryad_files_download('xxx')
+# # catch_loach_data.csv
+# traps <- read.csv("./Dryad_data/catch_loach_data.csv")
+traps <- read.csv("https://datadryad.org/api/v2/files/3345399/download")
 
 ## 3.3 Fish ####
-fish <- dryad_files_download('xxx')
-# loach_length_data.csv
+# fish <- dryad_files_download('xxx')
+# # loach_length_data.csv
+# fish <- read.csv("./Dryad_data/loach_length_data.csv")
+fish <- read.csv("https://datadryad.org/api/v2/files/3345405/download")
 
 
 #### 3. Prepare Data ####

@@ -7,7 +7,7 @@
 # Last updated: 
 # March 7, 2023
 
-# Libraries
+# Libraries ####
 # 
 # artemis requires cmdstanr, which you might need to install
 #     artemis installation instructions: https://github.com/fishsciences/artemis
@@ -27,13 +27,16 @@ library(openxlsx)
 library(rdryad)
 library(ggplot2)
 library(stringr)
+library(readxl)
+library(ggtext)
 
 
-# Read data
+# Read data ####
 # dat = read.xlsx("Analysis/Livecar/USFWS_Loach removal_eDNA calibration.xlsx", sheet=1) #update path to data file location
 # library(readxl)
 # dat = read_xlsx("C:/Users/vtobias/Documents/Loach_Study_2023/Data_Raw/USFWS_Loach removal_eDNA calibration.xlsx")
-dat = dryad_files_download('xxx')
+# dat = dryad_files_download('xxx')
+dat = read.csv("https://datadryad.org/api/v2/files/3345398/download")
 # CalibrationExperiment_qPCR_RAW.csv
 
 # set distances plotting order
@@ -43,19 +46,19 @@ dat$dist_lc_m = factor(dat$dist_lc_m,
                                "Field Control", "Extraction Control"))
 
 # subset data with only targets that were in LC
-lc_only=subset(dat, Target !="LSL/FSL")
+lc_only=subset(dat, target !="LSL/FSL")
 
 # Add alpha and beta to df (this value is determined by the standard curve for 
 #    each assay). Alpha and beta used in artemis model.
-Target = c("BHOO", "ANCH") #target names
+target = c("BHOO", "ANCH") #target names
 alpha = c("22.686", "18.475") #ln(y-intercept) of standard curve for each target name
 beta = c("-1.406", "-1.545") #ln(slope) of standard curve for each target name
 
 # create target, alpha, and beta dataframe
-ab=data.frame(Target, alpha, beta)
+ab=data.frame(target, alpha, beta)
 
 # add alpha and beta to livecar qPCR data
-lc_only_alpha_beta=merge(lc_only,ab, by="Target")
+lc_only_alpha_beta=merge(lc_only,ab, by="target")
 lc_only_alpha_beta$alpha=as.numeric(lc_only_alpha_beta$alpha)
 lc_only_alpha_beta$beta=as.numeric(lc_only_alpha_beta$beta)
 
@@ -67,7 +70,7 @@ lrg_canal=subset(lc_only_alpha_beta, location=="Large Channel" &
                    control!="Control" & dist_lc_m!="Pre")
 
 # Modeling small channel data
-m_sc = eDNA_lmer(Cq ~ as.factor(dist_lc_m) + Target + (1|FilterID),
+m_sc = eDNA_lmer(Cq ~ as.factor(dist_lc_m) + target + (1|FilterID),
                    data = small_canal,
                    std_curve_alpha = small_canal$alpha,
                    std_curve_beta = small_canal$beta)
@@ -95,34 +98,45 @@ m_lc = eDNA_lmer(Cq ~ dist_lc_m + Target + (1|FilterID),
 sm2 = as.data.frame(summary(m_sc))
 sm2$Predictor = row.names(sm2)
 colnames(sm2) = c("mean", "lwr", "median", "upr", "Predictor")
-row2 = c("Intercept","50m","100m","250m","500m","Target(Ballyhoo)",
+row2 = c("Intercept","50m",
+         "100m","250m",
+         "500m", "Target(Hemiramphus brasiliensis)",   #"Target(Ballyhoo)",
           "sigma ln(eDNA)")
 sm2=cbind(sm2,row2)
 sm2$row2 = factor(sm2$row2, levels=c("500m", "250m","100m","50m",
-                                     "Target(Ballyhoo)","sigma ln(eDNA)", 
+                                     "Target(Hemiramphus brasiliensis)", #"Target(Ballyhoo)",
+                                     "sigma ln(eDNA)",
                                      "Intercept"))
+# sm2$row2 = as.factor(sm2$row2)
 
-# plot model output for small canal
+# Figure 4 ####
 sc_model_plot =
   ggplot(sm2[sm2$row2 != "Intercept", ], 
-       aes(x = median, 
-           y = row2)) +
+         aes(x = median, 
+             y = row2)) +
   geom_point(size = 2.5, color = "gray40") +
   geom_segment(aes(xend = lwr, x = median, y = row2, yend = row2)) +
   geom_segment(aes(xend = upr, x = median, y = row2, yend = row2)) +
-  scale_y_discrete(limits=rev)+
+  scale_y_discrete(#limits=rev,
+    labels = c("50m","100m","250m","500m", 
+               "Target(*Hemiramphus<br>brasiliensis*)",   #"Target(Ballyhoo)",
+               "sigma ln(eDNA)"))+
   labs(x = "Model Estimate (ln[eDNA])", y = NULL)+
   theme_bw()+
-  theme(text=element_text(size=12, family="serif"), 
+  theme(text = element_text(size = 14, 
+                            family = "sans"), 
         plot.title = element_text(hjust=0.5), 
-        plot.subtitle = element_text(hjust=0.5))
- 
+        plot.subtitle = element_text(hjust=0.5),
+        axis.text.y = element_markdown())
+
 
 # Export small channel model output
-ggsave("./Figures/sc_model_plot2.jpeg",
+ggsave("./Figures/sc_model_plot2.png",
        plot=sc_model_plot, 
        width=7, 
-       height= 5.25) #1.5*aspect_ratio) # update directory as needed
+       height= 5.25,
+       units = "in",
+       dpi = 300)
 
 
 # p-detect in small channel
@@ -183,6 +197,7 @@ ggsave("./Figures/sc_pod_plot.jpeg",
        width=5, 
        height= 7) #1.25*aspect_ratio)  # update directory
 
+# Figure 5 ####
 # PoD plot with error bars
 facet_names = as_labeller(
   c(`Anchovy` = "Appx. 16g", 
@@ -198,12 +213,12 @@ sc_pod_plot_eb=
                      name="Estimated Biomass",
                      labels=c("Appx. 16g", "Appx. 100g"),
                      guide = guide_legend(label.theme = 
-                                            element_text(size = 10, 
-                                                         family="serif")))+
+                                            element_text(size = 14, 
+                                                         family="sans")))+
   labs(y="Probability of Detection", 
        x="Distance (m) from Fixed Biomass")+
   theme_bw()+
-  theme(text = element_text (size=12, family= "serif"))+
+  theme(text = element_text(size = 16, family = "sans"))+
   theme(plot.title = element_text(hjust=0.5), 
         plot.subtitle = element_text(hjust=0.5), 
         legend.position = "bottom") +
@@ -212,9 +227,118 @@ sc_pod_plot_eb=
              labeller=facet_names)
 
 
-ggsave("./Figures/sc_pod_plot_errorbars.jpeg",
+ggsave("./Figures/sc_pod_plot_errorbars.png",
        plot=sc_pod_plot_eb, 
        width=10, 
-       height= 6) #2*aspect_ratio) # update directory
+       height= 6,
+       units = "in",
+       dpi = 300)
+
+
+
+# edit location names (for pub)
+dat$location_edit = gsub("Large Channel", "B. Large Canal",
+                         gsub("Large Channel, Post LC", "D. Large Canal (24hr)",
+                              gsub( "Small Channel", "A. Small Canal",
+                                    gsub(  "Small Channel, Post LC", "C. Small Canal (24hr)", 
+                                           gsub("Extraction Control","Extraction Control", 
+                                                dat$location)))))
+# edit target names
+dat$Target_edit = gsub("BHOO", "Hemiramphus brasiliensis",
+                       gsub("ANCH", "Engraulis mordax",
+                            gsub("LSL/FSL", "Paramisgurnus dabryanus/Misgurnus mizolepis",
+                                 dat$target)))
+
+# subset data with only targets that were in LC
+lc_only=subset(dat, target !="LSL/FSL")
+# subset data with only background target (loach)
+loach_only=subset(dat, target =="LSL/FSL")
+
+# Add alpha and beta to df (this value is determined by the standard curve for each assay). Alpha and beta used in artemis model.
+target = c("BHOO", "ANCH") #target names
+alpha = c("22.686", "18.475") #ln(y-intercept) of standard curve for each target name
+beta = c("-1.406", "-1.545") #ln(slope) of standard curve for each target name
+
+# create target, alpha, and beta dataframe
+ab=data.frame(target, alpha, beta)
+
+# add alpha and beta to livecar qPCR data
+lc_only_alpha_beta=merge(lc_only,ab, by="target")
+
+# subsbet samples when livecar was in the water (no controls, and no 24hr later samples)
+lc_only_alpha_beta = subset(lc_only_alpha_beta, location %in% c("Large Channel", "Small Channel") & dist_lc_m %in% c("10", "50","100","250","500"))
+lc_only_alpha_beta$alpha=as.numeric(lc_only_alpha_beta$alpha)
+lc_only_alpha_beta$beta=as.numeric(lc_only_alpha_beta$beta)
+
+# Figure 2 ####
+# plot that shows anchovy and ballyhoo detection from livecar
+lc_detect_plot=
+  ggplot(subset(lc_only, 
+                location %in% c("Large Channel", "Large Channel, Post LC", "Small Channel", "Small Channel, Post LC")), 
+         aes(x = dist_lc_m, 
+             y = `relative_conc_ng.uL`, 
+             shape = Target_edit)) +
+  geom_point (size =2) +
+  scale_shape_manual(values=c(1,15), 
+                     name="Target", 
+                     guide = guide_legend(label.theme = element_text(size = 12, 
+                                                                     family="sans", 
+                                                                     angle = 0, 
+                                                                     face = "italic"))) +
+  #geom_smooth(se = FALSE) +
+  #scale_y_log10(oob = scales::squish_infinite)+
+  labs(x="Distance (m)", 
+       y="Relative Concentration of eDNA (ng/µL)")+
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 5))+
+  theme_bw()+
+  theme(text = element_text(size = 13, 
+                            family = "sans"), 
+        plot.title = element_text(hjust = 0.5), 
+        legend.position = "bottom")+
+  facet_wrap(.~location_edit)
+
+aspect_ratio= 2.5
+# export as anch and bhoo data to show spread of data
+ggsave("./Figures/lc_detects_plot.png",
+       plot = lc_detect_plot, 
+       width = 5.5, 
+       height = 2 * aspect_ratio,
+       units = "in",
+       dpi = 300)
+
+
+# Figure 3 ####
+# plot that shows the large scale loach detections (for Pub)
+lsl_detect_plot =
+  ggplot(subset(loach_only, 
+                location %in% c("Large Channel", "Large Channel, Post LC", "Small Channel", "Small Channel, Post LC")), 
+         aes(x = dist_lc_m, 
+             y = `relative_conc_ng.uL`, 
+             shape = Target_edit)) +
+  geom_point(size =1.75) +
+  scale_shape_manual(values=c(17), 
+                     name="Target", 
+                     guide = guide_legend(label.theme = element_text(
+                       size = 12, 
+                       family="sans", 
+                       angle = 0, 
+                       face = "italic")))+
+  #geom_smooth(se = FALSE) +
+  #scale_y_log10(oob = scales::squish_infinite)+
+  labs(x="Distance (m)", 
+       y="Relative Concentration of eDNA (ng/µL)")+
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 5))+
+  theme_bw()+
+  theme(text = element_text(size = 13, 
+                            family = "sans"), 
+        plot.title = element_text(hjust = 0.5), 
+        legend.position = "bottom") +
+  facet_wrap(~location_edit)
+
+# export as Figure 1 to show spread of data
+ggsave("./Figures/lsl_detects_plot.png",
+       plot = lsl_detect_plot, 
+       width=5.5, 
+       height=2 * aspect_ratio)
 
 ### END ###
